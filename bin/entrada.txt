@@ -1,0 +1,30 @@
+program Teste
+
+int a;
+int b;
+int resultado;
+float media;
+int[] vetor;
+
+{
+    /* atribuicoes simples e calculo de expressoes aritmeticas */
+    a = 10;
+    b = 20;
+    resultado = a + b * 2;
+    media = (a + b) / 2;
+
+    /* estrutura condicional if-else */
+    if (resultado > 40) {
+        resultado = resultado - 5;
+    } else {
+        resultado = resultado + 5;
+    }
+
+    /* laco de repeticao while */
+    while (a < b) {
+        a = a + 1;
+    }
+
+    /* expressao com parenteses, precedencia e modulo */
+    resultado = (a + b) * 2 - 10 % 3;
+}

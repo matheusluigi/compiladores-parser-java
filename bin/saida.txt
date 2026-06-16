@@ -1,0 +1,23 @@
+=================================================
+ COMPILADOR Java--  |  Analise Sintatica (Parser)
+ Arquivo de entrada: entrada.txt
+=================================================
+Declaracao de variavel reconhecida.
+Declaracao de variavel reconhecida.
+Declaracao de variavel reconhecida.
+Declaracao de variavel reconhecida.
+Declaracao de variavel reconhecida.
+Atribuicao reconhecida: a = 10.0
+Atribuicao reconhecida: b = 20.0
+Atribuicao reconhecida: resultado = 50.0
+Atribuicao reconhecida: media = 15.0
+Atribuicao reconhecida: resultado = 45.0
+Atribuicao reconhecida: resultado = 50.0
+Comando IF-ELSE reconhecido (condicao = true).
+Atribuicao reconhecida: a = 11.0
+Comando WHILE reconhecido (condicao = true).
+Atribuicao reconhecida: resultado = 61.0
+=================================================
+ Programa 'Teste' reconhecido com SUCESSO!
+ Arquivo sem erros de sintaxe.
+=================================================

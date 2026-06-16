@@ -1,0 +1,203 @@
+/* ============================================================
+   Parser.cup  -  Analisador Sintatico/Semantico da linguagem Java--
+   Disciplina: Compiladores  -  Trabalho: Parser (JFlex + JCup)
+   Gera: parser.java e sym.java
+   (comando: java -jar java-cup-11b.jar Parser.cup)
+   ============================================================ */
+
+import java_cup.runtime.*;
+import java.util.HashMap;
+
+/* ============================================================
+   CODIGO AUXILIAR DO PARSER
+   (tabela de simbolos + tratamento de erros sintaticos)
+   ============================================================ */
+parser code {:
+
+    /* Tabela de simbolos simples: associa o nome de cada variavel ao
+       seu valor atual. Permite que o "calculo de expressoes" funcione
+       tambem com variaveis (ex.: x = 5; y = x + 3;  ->  y = 8.0). */
+    public HashMap<String, Double> tabela = new HashMap<String, Double>();
+
+    /* Contador de erros de sintaxe encontrados durante a analise. */
+    public int numErros = 0;
+
+    /* Recupera o valor de uma variavel (0.0 caso ainda nao tenha valor). */
+    public Double valorDe(String id) {
+        Double v = tabela.get(id);
+        if (v == null) {
+            System.out.println("   [aviso] variavel '" + id
+                + "' usada sem valor definido; assumindo 0.0");
+            return 0.0;
+        }
+        return v;
+    }
+
+    /* Mensagem amigavel de erro de sintaxe, com linha e coluna. */
+    public void syntax_error(Symbol s) {
+        numErros++;
+        System.err.print(">> ERRO DE SINTAXE");
+        if (s != null && s.left >= 0) {
+            System.err.print(" na linha " + s.left + ", coluna " + s.right);
+        }
+        if (s != null && s.value != null) {
+            System.err.print(" (proximo a \"" + s.value + "\")");
+        }
+        System.err.println();
+    }
+
+    /* Chamado quando o parser nao consegue se recuperar do erro. */
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {
+        System.err.println(">> Erro de sintaxe irrecuperavel. Analise abortada.");
+    }
+:};
+
+/* ============================================================
+   TERMINAIS  (devem ter os MESMOS nomes usados no Scanner.flex)
+   ============================================================ */
+terminal            PROGRAM, IF, ELSE, WHILE, INT, FLOAT;          /* palavras reservadas */
+terminal            MAIS, MENOS, MULT, DIV, MOD;                   /* aritmeticos         */
+terminal            ATRIB;                                          /* atribuicao  =       */
+terminal            IGUAL, DIFER, MAIOR, MAIORIG, MENOR, MENORIG;  /* relacionais         */
+terminal            ABREPAR, FECHAPAR, ABRECHAVE, FECHACHAVE;      /* ( ) { }             */
+terminal            ABRECOL, FECHACOL, PTVIRG, VIRG;               /* [ ] ; ,             */
+terminal Double     INTEIRO, REAL;                                 /* numeros (Double)    */
+terminal String     ID;                                            /* identificador       */
+terminal            UMINUS, LOWER_THAN_ELSE;  /* pseudo-terminais: so para precedencia */
+
+/* ============================================================
+   NAO-TERMINAIS  (com seus tipos, quando houver "valor" associado)
+   ============================================================ */
+non terminal            programa, decls, decl, tipo, lista_ids;
+non terminal            bloco, lista_cmd, comando;
+non terminal            atribuicao, cmd_if, cmd_while;
+non terminal Double     expr;
+non terminal String     designator;
+non terminal Boolean    condicao;
+
+/* ============================================================
+   PRECEDENCIA  (resolve os conflitos shift-reduce -> gramatica sem
+   ambiguidade). O primeiro declarado tem a MENOR precedencia.
+   ============================================================ */
+precedence nonassoc LOWER_THAN_ELSE;   /* truque do "if" sem else (dangling else) */
+precedence nonassoc ELSE;
+precedence left     MAIS, MENOS;
+precedence left     MULT, DIV, MOD;
+precedence right    UMINUS;            /* menos unario (ex.: -5) */
+
+/* Simbolo inicial da gramatica */
+start with programa;
+
+/* ============================================================
+   REGRAS DE PRODUCAO  (gramatica Java-- + acoes semanticas)
+   ============================================================ */
+
+/* ---- Programa: program <id> <declaracoes> { <comandos> } ---- */
+programa ::= PROGRAM ID:id decls bloco
+             {:
+                System.out.println("=================================================");
+                if (parser.numErros == 0) {
+                    System.out.println(" Programa '" + id + "' reconhecido com SUCESSO!");
+                    System.out.println(" Arquivo sem erros de sintaxe.");
+                } else {
+                    System.out.println(" Programa '" + id + "' analisado.");
+                    System.out.println(" Foram encontrados " + parser.numErros
+                        + " erro(s) de sintaxe (recuperados em modo panico).");
+                }
+                System.out.println("=================================================");
+             :}
+           ;
+
+/* ---- Declaracoes de variaveis (zero ou mais) ---- */
+decls ::= decls decl
+        | /* vazio */
+        ;
+
+decl ::= tipo lista_ids PTVIRG
+         {: System.out.println("Declaracao de variavel reconhecida."); :}
+       ;
+
+/* Tipos: int, float e vetores int[] / float[] */
+tipo ::= INT
+       | FLOAT
+       | INT ABRECOL FECHACOL
+       | FLOAT ABRECOL FECHACOL
+       ;
+
+/* Lista de identificadores: a, b, c  (cada um nasce com valor 0.0) */
+lista_ids ::= lista_ids VIRG ID:id   {: parser.tabela.put(id, 0.0); :}
+            | ID:id                   {: parser.tabela.put(id, 0.0); :}
+            ;
+
+/* ---- Bloco de comandos delimitado por chaves ---- */
+bloco ::= ABRECHAVE lista_cmd FECHACHAVE
+        ;
+
+lista_cmd ::= lista_cmd comando
+            | /* vazio */
+            ;
+
+/* ---- Comandos (Statements) ---- */
+comando ::= atribuicao
+          | cmd_if
+          | cmd_while
+          | bloco
+          | error PTVIRG
+            {: System.out.println("   >> erro de sintaxe recuperado (modo panico)."); :}
+          ;
+
+/* ---- Atribuicao: <designator> = <expr> ;  ---- */
+atribuicao ::= designator:nome ATRIB expr:e PTVIRG
+               {:
+                  parser.tabela.put(nome, e);
+                  System.out.println("Atribuicao reconhecida: " + nome + " = " + e);
+               :}
+             ;
+
+/* ---- Condicional if / if-else (dangling else via precedencia) ---- */
+cmd_if ::= IF ABREPAR condicao:c FECHAPAR comando
+           {: System.out.println("Comando IF reconhecido (condicao = " + c + ")."); :}
+           %prec LOWER_THAN_ELSE
+         | IF ABREPAR condicao:c FECHAPAR comando ELSE comando
+           {: System.out.println("Comando IF-ELSE reconhecido (condicao = " + c + ")."); :}
+         ;
+
+/* ---- Repeticao while ---- */
+cmd_while ::= WHILE ABREPAR condicao:c FECHAPAR comando
+              {: System.out.println("Comando WHILE reconhecido (condicao = " + c + ")."); :}
+            ;
+
+/* ---- Condicao: <expr> <op_relacional> <expr>  (retorna Boolean) ---- */
+condicao ::= expr:a IGUAL   expr:b  {: RESULT = a.doubleValue() == b.doubleValue(); :}
+           | expr:a DIFER   expr:b  {: RESULT = a.doubleValue() != b.doubleValue(); :}
+           | expr:a MAIOR   expr:b  {: RESULT = a.doubleValue() >  b.doubleValue(); :}
+           | expr:a MAIORIG expr:b  {: RESULT = a.doubleValue() >= b.doubleValue(); :}
+           | expr:a MENOR   expr:b  {: RESULT = a.doubleValue() <  b.doubleValue(); :}
+           | expr:a MENORIG expr:b  {: RESULT = a.doubleValue() <= b.doubleValue(); :}
+           ;
+
+/* ---- Expressoes aritmeticas (com calculo do resultado) ---- */
+expr ::= expr:a MAIS  expr:b   {: RESULT = a + b; :}
+       | expr:a MENOS expr:b   {: RESULT = a - b; :}
+       | expr:a MULT  expr:b   {: RESULT = a * b; :}
+       | expr:a DIV   expr:b
+         {:
+            if (b.doubleValue() == 0.0) {
+                System.out.println("   [aviso] divisao por zero! resultado indefinido (0.0).");
+                RESULT = 0.0;
+            } else {
+                RESULT = a / b;
+            }
+         :}
+       | expr:a MOD   expr:b   {: RESULT = a % b; :}
+       | MENOS expr:a          {: RESULT = -a; :}                 %prec UMINUS
+       | ABREPAR expr:a FECHAPAR  {: RESULT = a; :}
+       | INTEIRO:n             {: RESULT = n; :}
+       | REAL:r               {: RESULT = r; :}
+       | designator:nome       {: RESULT = parser.valorDe(nome); :}
+       ;
+
+/* ---- Designator: identificador ou acesso a vetor (id[expr]) ---- */
+designator ::= ID:id                              {: RESULT = id; :}
+             | ID:id ABRECOL expr:idx FECHACOL    {: RESULT = id; :}
+             ;

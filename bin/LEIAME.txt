@@ -1,0 +1,47 @@
+============================================================
+ TRABALHO: PARSER da linguagem Java-- (JFlex + JCup)
+ Disciplina: Compiladores
+============================================================
+
+CONTEUDO DA PASTA bin (entregaveis):
+
+  Scanner.flex   -> Analisador Lexico (Expressoes Regulares) - JFlex
+  Scanner.java   -> gerado pelo JFlex a partir do Scanner.flex
+  Parser.cup     -> Gramatica + acoes semanticas - JCup
+  parser.java    -> gerado pelo JCup (o "parse.java" do enunciado)
+  sym.java       -> gerado pelo JCup (constantes dos terminais)
+  Main.java      -> acopla Scanner + Parser e chama p.parse()
+  entrada.txt    -> arquivo de teste (programa Java-- valido)
+  saida.txt      -> saida da execucao sobre o entrada.txt
+  entrada_erro.txt / saida_erro.txt -> teste com erro (recuperacao em modo panico)
+  Documentacao_Parser.pdf -> documentacao do trabalho
+
+  Arquivos de apoio: compilar.bat, executar.bat, LEIAME.txt
+  Bibliotecas:        java-cup-11b.jar, java-cup-11b-runtime.jar, jflex-full-1.9.1.jar
+  Compilados:         Main.class, parser.class, Scanner.class, sym.class, ...
+
+------------------------------------------------------------
+ COMO EXECUTAR (a forma mais simples)
+------------------------------------------------------------
+  1) De dois cliques em  compilar.bat   (gera e compila tudo)
+  2) De dois cliques em  executar.bat   (roda sobre entrada.txt)
+     - para o teste de erro:  executar.bat entrada_erro.txt
+
+------------------------------------------------------------
+ COMO EXECUTAR (comandos manuais - iguais aos da Aula 14)
+------------------------------------------------------------
+  java -jar java-cup-11b.jar Parser.cup
+  jflex Scanner.flex
+  javac -cp ".;java-cup-11b-runtime.jar" *.java
+  java  -cp ".;java-cup-11b-runtime.jar" Main entrada.txt
+
+------------------------------------------------------------
+ OBSERVACAO SOBRE O JAVA
+------------------------------------------------------------
+  Esta maquina nao tinha Java instalado, entao foi colocado um
+  JDK 17 portatil na pasta ..\Parser\jdk  (fora da pasta bin).
+  Os scripts .bat usam esse JDK automaticamente; se voce instalar
+  o Java no sistema, eles passam a usar o Java do sistema.
+  Se nao precisar mais, pode apagar a pasta  ..\Parser\jdk
+  (a entrega e' apenas a pasta bin).
+============================================================

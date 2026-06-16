@@ -1,0 +1,10 @@
+program TesteErro
+
+int x;
+int y;
+
+{
+    x = 10;
+    y = 5 5;          /* ERRO PROPOSITAL: faltou o operador entre 5 e 5 */
+    x = y + 2;        /* o parser se recupera (modo panico) e continua aqui */
+}

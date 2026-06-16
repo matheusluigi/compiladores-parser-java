@@ -1,0 +1,14 @@
+=================================================
+ COMPILADOR Java--  |  Analise Sintatica (Parser)
+ Arquivo de entrada: entrada_erro.txt
+=================================================
+Declaracao de variavel reconhecida.
+Declaracao de variavel reconhecida.
+Atribuicao reconhecida: x = 10.0
+>> ERRO DE SINTAXE na linha 8, coluna 11 (proximo a "5.0")
+   >> erro de sintaxe recuperado (modo panico).
+Atribuicao reconhecida: x = 2.0
+=================================================
+ Programa 'TesteErro' analisado.
+ Foram encontrados 1 erro(s) de sintaxe (recuperados em modo panico).
+=================================================

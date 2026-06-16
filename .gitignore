@@ -1,0 +1,12 @@
+# JDK portatil (nao versionar - ~300MB; so para build local)
+/jdk/
+jdk17.zip
+
+# Artefatos compilados (regeneraveis com compilar.bat)
+*.class
+
+# Backups gerados pelo JFlex
+*.java~
+
+# Imagens temporarias de preview do PDF
+_preview_*.png
