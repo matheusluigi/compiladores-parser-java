@@ -1,0 +1,163 @@
+import java_cup.runtime.*;
+
+/*
+ * ATIVIDADE 2
+ * A operação MOD só é válida para inteiros.
+ * O compilador deve verificar se os operandos são inteiros
+ * antes de efetuar o MOD.
+ *
+ * Estratégia:
+ *   - Usamos Double para representar todos os números (como no exemplo base).
+ *   - Um número Double é considerado "inteiro" se não tiver parte fracionária,
+ *     ou seja, se  valor == Math.floor(valor).
+ *   - Adicionamos um método auxiliar "ehInteiro(Double v)" no parser code
+ *     para encapsular essa verificação.
+ *   - Na regra term → factor MOD term verificamos ambos os operandos.
+ *     Se algum não for inteiro, emitimos um erro semântico e retornamos 0.0
+ *     para não quebrar a recursão (que espera um Double).
+ *
+ * Observação: o roteiro também menciona instanceof Integer/Double e getClass().
+ * Como a gramática usa Double em todo lugar, optamos pela verificação de
+ * parte fracionária, que é a abordagem mais robusta para esse contexto.
+ */
+
+parser code {:
+    int    contador  = 0;
+    double somatorio = 0.0;
+
+    /* flag: o último factor reduzido veio de um designator? */
+    boolean ehDesignator = false;
+
+    /** Retorna true se o Double não possui parte fracionária. */
+    public boolean ehInteiro(Double v) {
+        return v != null && v == Math.floor(v) && !Double.isInfinite(v);
+    }
+
+    public void imprimeRelatorio() {
+        System.out.println("Foram reconhecidas e computadas:");
+        System.out.println(parser.contador + " expressoes");
+        System.out.println("Cujo somatorio foi: " + parser.somatorio);
+    }
+:}
+
+/* TERMINAIS */
+terminal PTVIRG, MAIS, MENOS, DIV, MULT, MOD, PTO;
+terminal ABRE_PARENT, FECHA_PARENT, ABRE_COLCH, FECHA_COLCH, KW_IF;
+terminal Double  NUMBER;
+terminal String  IDENT;
+
+/* NÃO TERMINAIS */
+non terminal         expr_list, expr_ptv;
+non terminal Double  expr, term, factor, designator;
+
+/* ------------------------------------------------------------------ */
+/*  expr_list                                                           */
+/* ------------------------------------------------------------------ */
+expr_list ::= expr_list expr_ptv:e
+                {: parser.contador++;
+                   parser.somatorio += e.doubleValue();
+                   parser.imprimeRelatorio(); :}
+            | expr_ptv:e
+                {: parser.contador++;
+                   parser.somatorio += e.doubleValue(); :}
+            ;
+
+/* ------------------------------------------------------------------ */
+/*  expr_ptv                                                            */
+/* ------------------------------------------------------------------ */
+expr_ptv ::= expr:e
+                {: System.out.println("= " + e);
+                   RESULT = e; :}
+             PTVIRG
+           ;
+
+/* ------------------------------------------------------------------ */
+/*  expr                                                                */
+/* ------------------------------------------------------------------ */
+expr ::= expr:e MAIS term:t  {: RESULT = e + t; :}
+       | expr:e MENOS term:t {: RESULT = e - t; :}
+       | MENOS term:t        {: RESULT = -t;     :}
+       | term:t              {: RESULT = t.doubleValue(); :}
+       ;
+
+/* ------------------------------------------------------------------ */
+/*  term                                                                */
+/* ------------------------------------------------------------------ */
+term ::= factor:f MULT term:t
+            {: RESULT = f * t; :}
+
+       | factor:f DIV term:t
+            {:
+                /* Atividade 1 embutida: divisão por zero via designator */
+                if (parser.ehDesignator && t.doubleValue() == 0) {
+                    double denominador = 1.0;
+                    java.util.Scanner leitor = new java.util.Scanner(System.in);
+                    do {
+                        System.out.println("Erro: variavel com valor zero usada como denominador.");
+                        System.out.println("Informe um novo denominador:");
+                        denominador = leitor.nextDouble();
+                    } while (denominador == 0);
+                    RESULT = f / denominador;
+                } else {
+                    RESULT = f / t;
+                }
+            :}
+
+       | factor:f MOD term:t
+            {:
+                /*
+                 * ATIVIDADE 2:
+                 * Verifica se AMBOS os operandos são inteiros antes de
+                 * efetuar o MOD.
+                 */
+                if (!parser.ehInteiro(f) || !parser.ehInteiro(t)) {
+                    System.out.println(
+                        "Erro semantico: operacao MOD exige operandos inteiros. " +
+                        "Recebidos: " + f + " % " + t);
+                    RESULT = Double.valueOf(0.0); /* valor neutro para não quebrar */
+                } else {
+                    /*
+                     * Convertemos para long para usar o % inteiro nativo do Java,
+                     * evitando imprecisão de ponto flutuante.
+                     */
+                    long fi = f.longValue();
+                    long ti = t.longValue();
+                    if (ti == 0) {
+                        System.out.println("Erro semantico: MOD por zero.");
+                        RESULT = Double.valueOf(0.0);
+                    } else {
+                        RESULT = Double.valueOf(fi % ti);
+                    }
+                }
+            :}
+
+       | factor:f
+            {: RESULT = f.doubleValue(); :}
+       ;
+
+/* ------------------------------------------------------------------ */
+/*  factor                                                              */
+/* ------------------------------------------------------------------ */
+factor ::= NUMBER:n
+                {: parser.ehDesignator = false;
+                   RESULT = n.doubleValue(); :}
+
+         | ABRE_PARENT expr:e FECHA_PARENT
+                {: parser.ehDesignator = false;
+                   RESULT = e.doubleValue(); :}
+
+         | designator:d
+                {: parser.ehDesignator = true;
+                   RESULT = d.doubleValue(); :}
+         ;
+
+/* ------------------------------------------------------------------ */
+/*  designator                                                          */
+/* ------------------------------------------------------------------ */
+designator ::= designator ABRE_COLCH expr FECHA_COLCH
+                   {: RESULT = Double.valueOf(1.0); :}
+             | designator PTO IDENT
+                   {: RESULT = Double.valueOf(1.0); :}
+             | IDENT
+                   {: RESULT = Double.valueOf(1.0); :}
+             ;

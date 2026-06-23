@@ -1,0 +1,33 @@
+package parser;
+import java_cup.runtime.*;
+import erros.ListaErros;
+parser code {:
+  public void defineErro(int l,int c,String t){ scanner.Scanner sc=(scanner.Scanner)this.getScanner(); sc.defineErro(l,c,t); }
+  public void defineErro(int l,int c){ scanner.Scanner sc=(scanner.Scanner)this.getScanner(); sc.defineErro(l,c); }
+  public void defineErro(String t){ scanner.Scanner sc=(scanner.Scanner)this.getScanner(); sc.defineErro(t); }
+:};
+terminal MAIOR,MENOR,MAIORIGUAL,MENORIGUAL,IGUALIGUAL,DIF;
+terminal PTVIRG,MAIS,MENOS,MULT,DIV,KW_IF,KW_ELSE,ABREPAR,FECHAPAR,ABRECHAVE,FECHACHAVE;
+terminal Double NUMBER;
+non terminal Double expr_list,expr_ptv,expr,factor,term,condicao,if;
+non terminal else;
+non terminal op_Relacional;
+
+if ::= KW_IF ABREPAR condicao FECHAPAR ABRECHAVE expr_list FECHACHAVE else
+     | KW_IF condicao:c {: parser.defineErro(cleft,cright,"IF sem parenteses "); :} ABRECHAVE expr_list FECHACHAVE else ;
+
+else ::= KW_ELSE ABRECHAVE expr_list FECHACHAVE | /* vazio */ ;
+
+condicao ::= expr op_Relacional expr ;
+op_Relacional ::= MAIOR|MENOR|MAIORIGUAL|MENORIGUAL|IGUALIGUAL|DIF ;
+
+expr_list ::= expr_list expr_ptv | expr_ptv ;
+expr_ptv  ::= expr PTVIRG ;
+
+expr ::= expr:e MAIS term:t {: RESULT=e+t; :} | expr:e MENOS term:t {: RESULT=e-t; :}
+       | expr:e {: parser.defineErro(eleft,eright,"Expressao sem operador."); :} term:t {: RESULT=t; :}
+       | MENOS term:t {: RESULT=-t; :} | term:t {: RESULT=t; :} ;
+term ::= factor:f MULT term:t {: RESULT=f*t; :}
+       | factor:f DIV term:t {: if(t==0){parser.defineErro(tleft,tright,"Divisao por zero.");} RESULT=f/t; :}
+       | factor:f {: RESULT=f; :} ;
+factor ::= NUMBER:n {: RESULT=n; :} | ABREPAR expr:e FECHAPAR {: RESULT=e; :} ;

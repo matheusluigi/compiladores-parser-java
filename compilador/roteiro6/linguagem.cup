@@ -1,0 +1,57 @@
+import java_cup.runtime.*;
+
+terminal            IF, TRUE, FALSE;
+terminal            EQ, NEQ, GEQ, LEQ, GT, LT;
+terminal            MAIS, MENOS, VEZES, DIV;
+terminal            ABRE, FECHA, ABRE_CHAVE, FECHA_CHAVE, PONTO_VIRGULA;
+terminal Integer    NUMERO;
+
+non terminal          programa;
+non terminal          bloco;
+non terminal          lista_cmd;
+non terminal          comando;
+non terminal          lista_stmt;
+non terminal          stmt;
+non terminal Boolean  condicao;
+non terminal Integer  expr;
+
+precedence left MAIS, MENOS;
+precedence left VEZES, DIV;
+
+start with programa;
+
+programa   ::= lista_cmd ;
+lista_cmd  ::= lista_cmd comando | comando ;
+
+comando ::= IF ABRE condicao:c FECHA bloco
+            {: if (!c) System.out.println("  [if falso — bloco nao executado]\n"); :}
+          ;
+
+bloco ::= ABRE_CHAVE lista_stmt FECHA_CHAVE
+        | ABRE_CHAVE FECHA_CHAVE
+        ;
+
+lista_stmt ::= lista_stmt stmt | stmt ;
+
+stmt ::= expr:e PONTO_VIRGULA
+         {: System.out.println("  Resultado: " + e); :}
+       ;
+
+condicao ::= expr:e1 EQ  expr:e2  {: RESULT = (e1.equals(e2)); :}
+           | expr:e1 NEQ expr:e2  {: RESULT = (!e1.equals(e2)); :}
+           | expr:e1 GEQ expr:e2  {: RESULT = (e1 >= e2); :}
+           | expr:e1 LEQ expr:e2  {: RESULT = (e1 <= e2); :}
+           | expr:e1 GT  expr:e2  {: RESULT = (e1 > e2); :}
+           | expr:e1 LT  expr:e2  {: RESULT = (e1 < e2); :}
+           | TRUE                 {: RESULT = true; :}
+           | FALSE                {: RESULT = false; :}
+           ;
+
+expr ::= expr:e1 MAIS  expr:e2  {: RESULT = e1 + e2; :}
+       | expr:e1 MENOS expr:e2  {: RESULT = e1 - e2; :}
+       | expr:e1 VEZES expr:e2  {: RESULT = e1 * e2; :}
+       | expr:e1 DIV   expr:e2  {: RESULT = e1 / e2; :}
+       | MENOS expr:e            {: RESULT = -e; :}
+       | ABRE expr:e FECHA       {: RESULT = e; :}
+       | NUMERO:n                {: RESULT = n; :}
+       ;

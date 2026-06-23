@@ -1,0 +1,107 @@
+/* parser.cup — Roteiro 3: Declaração de Variável */
+
+import java.util.Scanner;
+
+/* Terminais */
+terminal Double NUMBER;
+terminal String IDENT;
+terminal KW_PROGRAM;
+terminal PLUS, MINUS, MULT, DIV, MOD;
+terminal ABRE_PARENT, FECHA_PARENT;
+terminal ABRE_COLCH, FECHA_COLCH;
+terminal ABRE_CHAVE, FECHA_CHAVE;
+terminal PTO, VIRG, PTVIRG;
+
+/* Não-terminais */
+non terminal program, varDecl_aux, varDecl, varDecl_op;
+non terminal type;
+non terminal expr_list;
+non terminal Double expr, term, factor, designator;
+
+/* ── Ponto de entrada ─────────────────────────────────────────────── */
+
+program ::= KW_PROGRAM IDENT:nome
+            {: System.out.println("Programa: " + nome); :}
+            varDecl_aux
+            ABRE_CHAVE
+            expr_list
+            FECHA_CHAVE
+            ;
+
+/* ── Declarações de variáveis (zero ou mais) ─────────────────────── */
+
+varDecl_aux ::= varDecl varDecl_aux
+              | /* vazio */
+              ;
+
+/* ── Declaração: type id [, id]* ; ──────────────────────────────── */
+
+varDecl ::= type IDENT:id
+            {: System.out.print("Declaracao variavel: " + id); :}
+            varDecl_op PTVIRG
+            {: System.out.println(""); :}
+            ;
+
+/* ── Lista opcional de identificadores adicionais ────────────────── */
+
+varDecl_op ::= varDecl_op VIRG IDENT:id
+               {: System.out.print(", " + id); :}
+             | /* vazio */   /* OBRIGATÓRIO para permitir declaração única */
+             ;
+
+/* ── Tipo: IDENT  ou  IDENT[]  (ex.: int, float, int[], Pessoa[]) ─ */
+
+type ::= IDENT ABRE_COLCH FECHA_COLCH   /* int[], float[], Pessoa[] */
+       | IDENT                          /* int, float, Pessoa        */
+       ;
+
+/* ── Lista de expressões dentro do bloco { } ─────────────────────── */
+
+expr_list ::= expr_list expr:e PTVIRG
+              {: System.out.println("= " + e); :}
+            | expr:e PTVIRG
+              {: System.out.println("= " + e); :}
+            | /* vazio — bloco pode estar vazio */
+            ;
+
+/* ── Expressões aritméticas ──────────────────────────────────────── */
+
+expr ::= expr:e PLUS term:t   {: RESULT = e + t; :}
+       | expr:e MINUS term:t  {: RESULT = e - t; :}
+       | term:t               {: RESULT = t; :}
+       ;
+
+term ::= factor:f MULT term:t  {: RESULT = f * t; :}
+       | factor:f DIV  term:t  {: RESULT = f / t; :}
+       | factor:f MOD  term:t  {: RESULT = f % t; :}
+       | factor:f              {: RESULT = f.doubleValue(); :}
+       ;
+
+factor ::= NUMBER:n                           {: RESULT = n; :}
+         | ABRE_PARENT expr:e FECHA_PARENT    {: RESULT = e; :}
+         | designator:d                       {: RESULT = d; :}
+         ;
+
+/* ── Designator (acesso a variáveis/vetores/campos) ─────────────── */
+
+designator ::= designator:d ABRE_COLCH expr:e FECHA_COLCH
+               {:
+                   double indice = e;
+                   if (indice < 0) {
+                       System.out.println("ERRO SEMANTICO: indice negativo (" + indice + ").");
+                       Scanner ler = new Scanner(System.in);
+                       while (indice < 0) {
+                           System.out.print("Informe um indice valido (>= 0): ");
+                           indice = ler.nextDouble();
+                           if (indice < 0)
+                               System.out.println("Indice invalido! Tente novamente.");
+                       }
+                       System.out.println("Indice corrigido: " + indice);
+                   }
+                   RESULT = 1.0;
+               :}
+
+             | designator:d PTO IDENT:id   {: RESULT = 1.0; :}
+
+             | IDENT:id                    {: RESULT = 1.0; :}
+             ;

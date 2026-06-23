@@ -1,0 +1,4 @@
+vetor[2];
+objeto.campo;
+vetor[-1];
+1 + 2;

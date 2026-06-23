@@ -1,0 +1,8 @@
+program p
+  int a;
+  int[] vet;
+  float b, x;
+{
+  1 + 2;
+  4 + a;
+}

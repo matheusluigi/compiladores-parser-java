@@ -1,0 +1,66 @@
+/* parser.cup — Roteiro 2: IDENT e Designator */
+
+import java.util.Scanner;   // Atividade 3: pedir índice válido ao usuário
+
+/* Terminais */
+terminal Double NUMBER;
+terminal String IDENT;
+terminal PLUS, MINUS, MULT, DIV, MOD;
+terminal ABRE_PARENT, FECHA_PARENT;
+terminal ABRE_COLCH, FECHA_COLCH;
+terminal PTO, PTVIRG;
+
+/* Não-terminais */
+non terminal expr_list;
+non terminal Double expr, term, factor, designator;
+
+/* Gramática */
+expr_list ::= expr_list expr:e PTVIRG
+              {: System.out.println("= " + e); :}
+            | expr:e PTVIRG
+              {: System.out.println("= " + e); :}
+            ;
+
+expr ::= expr:e PLUS term:t   {: RESULT = e + t; :}
+       | expr:e MINUS term:t  {: RESULT = e - t; :}
+       | term:t               {: RESULT = t; :}
+       ;
+
+term ::= factor:f MULT term:t  {: RESULT = f * t; :}
+       | factor:f DIV  term:t  {: RESULT = f / t; :}
+       | factor:f MOD  term:t  {: RESULT = f % t; :}
+       | factor:f              {: RESULT = f.doubleValue(); :}
+       ;
+
+factor ::= NUMBER:n                           {: RESULT = n; :}
+         | ABRE_PARENT expr:e FECHA_PARENT    {: RESULT = e; :}
+         | designator:d                       {: RESULT = d; :}
+         ;
+
+/* ── Designator ──────────────────────────────────────────────────── */
+
+designator ::= designator:d ABRE_COLCH expr:e FECHA_COLCH
+               {:
+                   // ── Atividade 2: detectar índice negativo ──────────────
+                   double indice = e;
+
+                   if (indice < 0) {
+                       System.out.println("ERRO SEMANTICO: indice negativo (" + indice + ").");
+
+                       // ── Atividade 3: pedir novo índice válido ──────────
+                       Scanner ler = new Scanner(System.in);
+                       while (indice < 0) {
+                           System.out.print("Informe um indice valido (>= 0): ");
+                           indice = ler.nextDouble();
+                           if (indice < 0)
+                               System.out.println("Indice invalido! Tente novamente.");
+                       }
+                       System.out.println("Indice corrigido: " + indice);
+                   }
+                   RESULT = 1.0;
+               :}
+
+             | designator:d PTO IDENT:id   {: RESULT = 1.0; :}
+
+             | IDENT:id                    {: RESULT = 1.0; :}
+             ;

@@ -1,0 +1,41 @@
+import java_cup.runtime.*;
+parser code {: boolean deveExecutarBloco = false; :}
+terminal PTVIRG, PTO, MAIS, MENOS, DIV, MULT, MOD;
+terminal ABRE_PARENT, FECHA_PARENT, ABRE_CHAVE, FECHA_CHAVE, ABRE_COLCH, FECHA_COLCH;
+terminal KW_IF, KW_ELSE;
+terminal String OP_RELACIONAL;
+terminal Double NUMBER;
+terminal String IDENT;
+
+non terminal if, else, condicao;
+non terminal expr_list, expr_ptv;
+non terminal Double expr, term, factor, designator;
+
+if ::= {: System.out.print("if("); :}
+       KW_IF ABRE_PARENT condicao FECHA_PARENT
+       ABRE_CHAVE {: System.out.println("){"); :}
+       expr_list FECHA_CHAVE {: System.out.println("}"); :} else ;
+
+else ::= {: parser.deveExecutarBloco = !parser.deveExecutarBloco; System.out.print("else{"); :}
+         KW_ELSE ABRE_CHAVE expr_list FECHA_CHAVE {: System.out.println("}"); :}
+       | /* vazio */ ;
+
+condicao ::= expr:e1 OP_RELACIONAL:op expr:e2
+             {: boolean r = switch(op){ case "<" -> e1<e2; case "<=" -> e1<=e2;
+                case ">" -> e1>e2; case ">=" -> e1>=e2; case "==" -> e1==e2;
+                case "!=" -> e1!=e2; default -> false; };
+                parser.deveExecutarBloco=r; System.out.print(r); :} ;
+
+expr_list ::= expr_list expr_ptv | expr_ptv ;
+expr_ptv  ::= expr:e {: if(parser.deveExecutarBloco) System.out.println("= "+e); :} PTVIRG ;
+
+expr ::= expr:e MAIS term:t {: RESULT=e+t; :} | expr:e MENOS term:t {: RESULT=e-t; :}
+       | MENOS term:t {: RESULT=-t; :} | term:t {: RESULT=t.doubleValue(); :} ;
+term ::= factor:f MULT term:t {: RESULT=f*t; :} | factor:f DIV term:t {: RESULT=f/t; :}
+       | factor:f {: RESULT=f.doubleValue(); :} ;
+factor ::= NUMBER:n {: RESULT=n.doubleValue(); :}
+         | ABRE_PARENT expr:e FECHA_PARENT {: RESULT=e.doubleValue(); :}
+         | designator:d {: RESULT=d.doubleValue(); :} ;
+designator ::= designator:d ABRE_COLCH expr FECHA_COLCH {: RESULT=Double.valueOf(1.0); :}
+             | designator:d PTO IDENT {: RESULT=Double.valueOf(1.0); :}
+             | IDENT {: RESULT=Double.valueOf(1.0); :} ;
